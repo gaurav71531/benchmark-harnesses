@@ -19,6 +19,9 @@ BEDROCK_CONTEXT_WINDOW_OVERFLOW_MESSAGES = [
     "model is getting throttled",
     "read timed out"
 ]
+BEDROCK_SERVER_ERROR_MESSAGES = [
+    "system encountered an unexpected error during processing",
+]
 
 
 class SRBedrockModel(BedrockModel):
@@ -117,6 +120,10 @@ class SRBedrockModel(BedrockModel):
 
             if any(throttle_message in error_message.lower() for throttle_message in BEDROCK_CONTEXT_WINDOW_OVERFLOW_MESSAGES):
                 LOG.warning("bedrock threw throttling/timeout error")
+                raise ModelThrottledException(error_message) from e
+
+            if any(server_err_msg in error_message.lower() for server_err_msg in BEDROCK_SERVER_ERROR_MESSAGES):
+                LOG.warning("bedrock threw system stream error")
                 raise ModelThrottledException(error_message) from e
         except (
             ReadTimeoutError,
